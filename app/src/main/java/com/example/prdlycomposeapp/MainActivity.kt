@@ -1,16 +1,17 @@
 package com.example.prdlycomposeapp
 
+import android.content.Context
+import android.content.Intent
+import android.content.SharedPreferences
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.absolutePadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
@@ -28,12 +29,14 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -46,7 +49,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         installSplashScreen()
-
+        val sharedPref = getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
         setContent {
             PRDLYComposeAppTheme {
                 // A surface container using the 'background' color from the theme
@@ -54,21 +57,34 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    LoginScreen()
+                    LoginScreen(sharedPref)
                 }
             }
         }
     }
 }
 
+
+@Composable
+fun StartNewActivity(context: Context) {
+    context.startActivity(Intent(context, HomeActivity::class.java))
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LoginScreen() {
+fun LoginScreen(sharedPref: SharedPreferences) {
     var username by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
     var repeatPassword by rememberSaveable { mutableStateOf("") }
     var passwordHidden by rememberSaveable { mutableStateOf(true) }
     var loginScreen by rememberSaveable { mutableStateOf(true) }
+
+    val context = LocalContext.current
+    val token = sharedPref.getString("token", null)
+
+    if (token != null) {
+        StartNewActivity(context)
+    }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -141,7 +157,17 @@ fun LoginScreen() {
                     }
 
                     Row() {
-                        Button(onClick = { /*TODO*/ }) {
+                        Button(onClick = {
+                            if (loginScreen) {
+                                ApiRequests.login(User(null, username, password))
+                                with (sharedPref.edit()) {
+                                    putString("token", com.example.prdlycomposeapp.token.value)
+                                }
+                                context.startActivity(Intent(context, HomeActivity::class.java))
+                            } else {
+                                // do nothing
+                            }
+                        }) {
                             Text(if (loginScreen) "Zaloguj się" else "Zarejestruj się")
                         }
                         TextButton(
