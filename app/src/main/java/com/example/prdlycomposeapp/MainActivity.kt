@@ -4,6 +4,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
+import android.os.StrictMode
+import android.os.StrictMode.ThreadPolicy
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Arrangement
@@ -29,7 +31,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -44,12 +45,19 @@ import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.example.prdlycomposeapp.ui.theme.PRDLYComposeAppTheme
 
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val policy = ThreadPolicy.Builder().permitAll().build()
+        StrictMode.setThreadPolicy(policy)
 
         installSplashScreen()
         val sharedPref = getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
+        if (sharedPref.getString("token", null) != null) {
+            startNewActivity(context = this)
+        }
+
         setContent {
             PRDLYComposeAppTheme {
                 // A surface container using the 'background' color from the theme
@@ -65,8 +73,7 @@ class MainActivity : ComponentActivity() {
 }
 
 
-@Composable
-fun StartNewActivity(context: Context) {
+fun startNewActivity(context: Context) {
     context.startActivity(Intent(context, HomeActivity::class.java))
 }
 
@@ -80,11 +87,6 @@ fun LoginScreen(sharedPref: SharedPreferences) {
     var loginScreen by rememberSaveable { mutableStateOf(true) }
 
     val context = LocalContext.current
-    val token = sharedPref.getString("token", null)
-
-    if (token != null) {
-        StartNewActivity(context)
-    }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -159,10 +161,8 @@ fun LoginScreen(sharedPref: SharedPreferences) {
                     Row() {
                         Button(onClick = {
                             if (loginScreen) {
-                                ApiRequests.login(User(null, username, password))
-                                with (sharedPref.edit()) {
-                                    putString("token", com.example.prdlycomposeapp.token.value)
-                                }
+                                val token: Token = ApiRequests.login(User(null, username, password)) as Token
+                                sharedPref.edit().putString("token", token.token).apply()
                                 context.startActivity(Intent(context, HomeActivity::class.java))
                             } else {
                                 // do nothing
