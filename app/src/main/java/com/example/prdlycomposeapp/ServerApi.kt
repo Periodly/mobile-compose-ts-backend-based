@@ -1,10 +1,9 @@
 package com.example.prdlycomposeapp
 
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.mutableStateOf
 import retrofit2.Call
 import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.Header
 import retrofit2.http.POST
 
 data class User (
@@ -30,8 +29,6 @@ data class Friend (
     val friendId: Int
 )
 
-var token: MutableState<String> = mutableStateOf("")
-
 interface ServerApi {
     companion object {
         const val BASE_URL = "http://192.168.0.165:3000/api/"
@@ -46,7 +43,7 @@ interface ServerApi {
 
     // mood
     @GET("moods")
-    fun getMoods(): Call<MutableList<Mood>>
+    fun getMoods(@Header("Authorization") auth: String): Call<MutableList<Mood>>
 
     @POST("moods")
     fun addMood(@Body mood: Mood): Call<Int>

@@ -28,19 +28,26 @@ class ApiRequests {
 
         private val api: ServerApi = retrofit.create(ServerApi::class.java)
 
-        fun login(user: User) {
-            api.login(user).enqueue(object : Callback<Token> {
-                override fun onResponse(call: Call<Token>, response: Response<Token>) {
-                    if (response.isSuccessful) {
-                        Log.d("ApiRequests", "onResponse: ${response.body()}")
-                        token.value = response.body()!!.token
-                    }
+        fun login(user: User): Any {
+            return api.login(user).execute().let { response ->
+                if (response.isSuccessful) {
+                    return response.body()!!
+                } else {
+                    Log.e("ApiRequests", "login failed")
                 }
+            }
+        }
 
-                override fun onFailure(call: Call<Token>, t: Throwable) {
-                    Log.e("ApiRequests", "onFailure: ${t.message}")
+        fun getMoods(token: String): MutableList<Mood> {
+            val tokenReady = "Bearer $token"
+            api.getMoods(tokenReady).execute().let { response ->
+                if (response.isSuccessful) {
+                    return response.body()!!
+                } else {
+                    Log.e("ApiRequests", "getMoods failed")
                 }
-            })
+            }
+            return mutableListOf()
         }
     }
 }
